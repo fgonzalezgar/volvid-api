@@ -66,6 +66,32 @@ router.route('/')
 
 /**
  * @swagger
+ * /api/pets/user/{owner_name}:
+ *   get:
+ *     summary: Obtener mascotas filtradas por usuario (dueño)
+ *     tags: [Pets]
+ *     parameters:
+ *       - in: path
+ *         name: owner_name
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Nombre del dueño de la mascota
+ *     responses:
+ *       200:
+ *         description: Lista de mascotas que pertenecen a este usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Pet'
+ */
+router.route('/user/:owner_name')
+    .get(petController.getPetsByOwner);
+
+/**
+ * @swagger
  * /api/pets/{id}:
  *   get:
  *     summary: Obtener mascota por ID

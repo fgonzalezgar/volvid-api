@@ -103,10 +103,25 @@ const deletePet = async (req, res, next) => {
     }
 };
 
+const getPetsByOwner = async (req, res, next) => {
+    try {
+        const { owner_name } = req.params;
+        const [rows] = await pool.query('SELECT * FROM pets WHERE owner_name = ? ORDER BY created_at DESC', [owner_name]);
+        
+        res.status(200).json({
+            success: true,
+            data: rows
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getAllPets,
     getPetById,
     createPet,
     updatePet,
-    deletePet
+    deletePet,
+    getPetsByOwner
 };
