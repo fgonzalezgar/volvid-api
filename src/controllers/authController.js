@@ -70,6 +70,63 @@ const register = async (req, res, next) => {
     }
 };
 
+const login = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            const error = new Error('Correo y contraseña son obligatorios');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // Buscar el usuario en la Base de Datos
+        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+        const user = users[0];
+
+        if (!user) {
+            const error = new Error('Credenciales inválidas');
+            error.statusCode = 401; // Unauthorized
+            throw error;
+        }
+
+        // Comparar contraseñas
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        
+        if (!isMatch) {
+            const error = new Error('Credenciales inválidas');
+            error.statusCode = 401;
+            throw error;
+        }
+
+        // Token
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role },
+            JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Inicio de sesión exitoso',
+            data: {
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    role: user.role,
+                    accepted_terms: user.accepted_terms
+                },
+                token
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
-    register
+    register,
+    login
 };

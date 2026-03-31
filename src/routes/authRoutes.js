@@ -37,6 +37,19 @@ const authController = require('../controllers/authController');
  *           type: string
  *           format: password
  *           description: Confirmación opcional de contraseña
+ *     LoginRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *       properties:
+ *         email:
+ *           type: string
+ *           description: Correo electrónico registrado
+ *         password:
+ *           type: string
+ *           format: password
+ *           description: Contraseña
  */
 
 /**
@@ -61,5 +74,28 @@ const authController = require('../controllers/authController');
  *         description: El correo ya está registrado en el sistema.
  */
 router.post('/register', authController.register);
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Iniciar sesión
+ *     description: Valida el correo y contraseña ingresados por el usuario y genera un Token JWT.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: Login exitoso, se retorna la información del usuario y token.
+ *       400:
+ *         description: Datos faltantes en el cuerpo de la petición.
+ *       401:
+ *         description: Credenciales inválidas (contraseña incorrecta o correo no existe).
+ */
+router.post('/login', authController.login);
 
 module.exports = router;
