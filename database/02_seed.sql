@@ -6,3 +6,6 @@ INSERT INTO pets (name, species, breed, age, owner_name) VALUES
 ('Bella', 'Cat', 'Siamese', 2, 'Elena Rodriguez'),
 ('Charlie', 'Dog', 'Beagle', 5, 'Juan Pérez'),
 ('Luna', 'Cat', 'Maine Coon', 1, 'Maria Gomez Rojas');
+
+
+-- Thomas Fernando
