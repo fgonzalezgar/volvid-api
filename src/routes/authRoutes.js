@@ -37,6 +37,12 @@ const authController = require('../controllers/authController');
  *           type: string
  *           format: password
  *           description: Confirmación opcional de contraseña
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
  *     LoginRequest:
  *       type: object
  *       required:
