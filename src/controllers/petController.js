@@ -38,6 +38,9 @@ const createPet = async (req, res, next) => {
     try {
         const { user_id, name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs } = req.body;
         
+        // La foto viene de req.file (Multer)
+        const photo = req.file ? `/uploads/pets/${req.file.filename}` : null;
+
         if (!name || !species) {
             const error = new Error('Nombre y especie son campos obligatorios');
             error.statusCode = 400;
@@ -45,14 +48,14 @@ const createPet = async (req, res, next) => {
         }
 
         const [result] = await pool.query(
-            'INSERT INTO pets (user_id, name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [user_id || null, name, species, breed, age, owner_name, weight || null, gender || null, last_vaccine || null, last_bath || null, temperament || null, special_needs || null]
+            'INSERT INTO pets (user_id, name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [user_id || null, name, species, breed, age, owner_name, weight || null, gender || null, last_vaccine || null, last_bath || null, temperament || null, special_needs || null, photo]
         );
 
         res.status(201).json({
             success: true,
             message: 'Mascota creada correctamente',
-            data: { id: result.insertId, ...req.body }
+            data: { id: result.insertId, ...req.body, photo }
         });
     } catch (error) {
         next(error);
@@ -70,8 +73,11 @@ const updatePet = async (req, res, next) => {
             throw error;
         }
 
+        // Si se subió una nueva foto, actualizar la ruta; de lo contrario mantener la anterior
+        const photo = req.file ? `/uploads/pets/${req.file.filename}` : rows[0].photo;
+
         await pool.query(
-            'UPDATE pets SET user_id = ?, name = ?, species = ?, breed = ?, age = ?, owner_name = ?, weight = ?, gender = ?, last_vaccine = ?, last_bath = ?, temperament = ?, special_needs = ? WHERE id = ?',
+            'UPDATE pets SET user_id = ?, name = ?, species = ?, breed = ?, age = ?, owner_name = ?, weight = ?, gender = ?, last_vaccine = ?, last_bath = ?, temperament = ?, special_needs = ?, photo = ? WHERE id = ?',
             [
                 user_id !== undefined ? user_id : rows[0].user_id,
                 name || rows[0].name, 
@@ -85,13 +91,15 @@ const updatePet = async (req, res, next) => {
                 last_bath || rows[0].last_bath,
                 temperament || rows[0].temperament,
                 special_needs !== undefined ? special_needs : rows[0].special_needs,
+                photo,
                 req.params.id
             ]
         );
 
         res.status(200).json({
             success: true,
-            message: 'Mascota actualizada correctamente'
+            message: 'Mascota actualizada correctamente',
+            data: { photo }
         });
     } catch (error) {
         next(error);

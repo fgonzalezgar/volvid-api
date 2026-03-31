@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const petController = require('../controllers/petController');
+const upload = require('../middlewares/uploadMiddleware');
 
 /**
  * @swagger
@@ -48,6 +49,10 @@ const petController = require('../controllers/petController');
  *         special_needs:
  *           type: string
  *           description: Detalles sobre alergias o necesidades
+ *         photo:
+ *           type: string
+ *           format: binary
+ *           description: (Multipart) Archivo de imagen de la mascota
  *         age:
  *           type: integer
  *           description: Edad en años
@@ -73,12 +78,13 @@ const petController = require('../controllers/petController');
  *               items:
  *                 $ref: '#/components/schemas/Pet'
  *   post:
- *     summary: Crear una nueva mascota
+ *     summary: Crear una nueva mascota (soporta subida de foto)
+ *     description: Se recomienda enviar como Multipart/Form-Data para incluir la foto.
  *     tags: [Pets]
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/Pet'
  *     responses:
@@ -87,7 +93,7 @@ const petController = require('../controllers/petController');
  */
 router.route('/')
     .get(petController.getAllPets)
-    .post(petController.createPet);
+    .post(upload.single('photo'), petController.createPet);
 
 /**
  * @swagger
@@ -142,11 +148,12 @@ router.route('/user/:user_id')
  *         schema:
  *           type: integer
  *         required: true
- *       - in: body
- *         name: body
- *         required: true
- *         schema:
- *           $ref: '#/components/schemas/Pet'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/Pet'
  *     responses:
  *       200:
  *         description: Mascota actualizada
@@ -165,7 +172,7 @@ router.route('/user/:user_id')
  */
 router.route('/:id')
     .get(petController.getPetById)
-    .put(petController.updatePet)
+    .put(upload.single('photo'), petController.updatePet)
     .delete(petController.deletePet);
 
 module.exports = router;

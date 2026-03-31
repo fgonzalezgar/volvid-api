@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS pets (
     last_bath DATE,
     temperament VARCHAR(50),
     special_needs TEXT,
+    photo VARCHAR(255),
     age INT,
     owner_name VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
