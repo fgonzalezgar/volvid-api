@@ -3,12 +3,26 @@
 CREATE DATABASE IF NOT EXISTS u233760802_volvid;
 USE u233760802_volvid;
 
+-- Table for breeds catalog (Perro/Gato options)
+CREATE TABLE IF NOT EXISTS breeds (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    species VARCHAR(50) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Table for pets
 CREATE TABLE IF NOT EXISTS pets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     species VARCHAR(50) NOT NULL,
     breed VARCHAR(100),
+    weight DECIMAL(5,2),
+    gender VARCHAR(20),
+    last_vaccine DATE,
+    last_bath DATE,
+    temperament VARCHAR(50),
+    special_needs TEXT,
     age INT,
     owner_name VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

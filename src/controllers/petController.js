@@ -36,7 +36,7 @@ const getPetById = async (req, res, next) => {
 
 const createPet = async (req, res, next) => {
     try {
-        const { name, species, breed, age, owner_name } = req.body;
+        const { name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs } = req.body;
         
         if (!name || !species) {
             const error = new Error('Nombre y especie son campos obligatorios');
@@ -45,8 +45,8 @@ const createPet = async (req, res, next) => {
         }
 
         const [result] = await pool.query(
-            'INSERT INTO pets (name, species, breed, age, owner_name) VALUES (?, ?, ?, ?, ?)',
-            [name, species, breed, age, owner_name]
+            'INSERT INTO pets (name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [name, species, breed, age, owner_name, weight || null, gender || null, last_vaccine || null, last_bath || null, temperament || null, special_needs || null]
         );
 
         res.status(201).json({
@@ -61,7 +61,7 @@ const createPet = async (req, res, next) => {
 
 const updatePet = async (req, res, next) => {
     try {
-        const { name, species, breed, age, owner_name } = req.body;
+        const { name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs } = req.body;
         const [rows] = await pool.query('SELECT * FROM pets WHERE id = ?', [req.params.id]);
         
         if (rows.length === 0) {
@@ -71,8 +71,21 @@ const updatePet = async (req, res, next) => {
         }
 
         await pool.query(
-            'UPDATE pets SET name = ?, species = ?, breed = ?, age = ?, owner_name = ? WHERE id = ?',
-            [name || rows[0].name, species || rows[0].species, breed || rows[0].breed, age || rows[0].age, owner_name || rows[0].owner_name, req.params.id]
+            'UPDATE pets SET name = ?, species = ?, breed = ?, age = ?, owner_name = ?, weight = ?, gender = ?, last_vaccine = ?, last_bath = ?, temperament = ?, special_needs = ? WHERE id = ?',
+            [
+                name || rows[0].name, 
+                species || rows[0].species, 
+                breed || rows[0].breed, 
+                age || rows[0].age, 
+                owner_name || rows[0].owner_name,
+                weight !== undefined ? weight : rows[0].weight,
+                gender || rows[0].gender,
+                last_vaccine || rows[0].last_vaccine,
+                last_bath || rows[0].last_bath,
+                temperament || rows[0].temperament,
+                special_needs !== undefined ? special_needs : rows[0].special_needs,
+                req.params.id
+            ]
         );
 
         res.status(200).json({

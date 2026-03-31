@@ -20,10 +20,31 @@ const petController = require('../controllers/petController');
  *           description: Nombre de la mascota
  *         species:
  *           type: string
- *           description: Especie (Dog, Cat, etc.)
+ *           description: Especie (Perro, Gato, etc.)
  *         breed:
  *           type: string
  *           description: Raza
+ *         weight:
+ *           type: number
+ *           format: float
+ *           description: Peso en kg
+ *         gender:
+ *           type: string
+ *           description: Género (Macho, Hembra)
+ *         last_vaccine:
+ *           type: string
+ *           format: date
+ *           description: Fecha de última vacuna (YYYY-MM-DD)
+ *         last_bath:
+ *           type: string
+ *           format: date
+ *           description: Fecha de último baño (YYYY-MM-DD)
+ *         temperament:
+ *           type: string
+ *           description: Temperamento (Amigable, Energético, etc.)
+ *         special_needs:
+ *           type: string
+ *           description: Detalles sobre alergias o necesidades
  *         age:
  *           type: integer
  *           description: Edad en años
@@ -31,6 +52,7 @@ const petController = require('../controllers/petController');
  *           type: string
  *           description: Nombre del dueño
  */
+
 
 /**
  * @swagger
