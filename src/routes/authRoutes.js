@@ -56,6 +56,29 @@ const authController = require('../controllers/authController');
  *           type: string
  *           format: password
  *           description: Contraseña
+ *     AuthResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         message:
+ *           type: string
+ *         data:
+ *           type: object
+ *           properties:
+ *             user:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 name:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *             token:
+ *               type: string
  */
 
 /**
@@ -74,6 +97,10 @@ const authController = require('../controllers/authController');
  *     responses:
  *       201:
  *         description: Cuenta creada exitosamente. Token generado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
  *       400:
  *         description: Faltan datos requeridos o las contraseñas no coinciden.
  *       409:
@@ -97,6 +124,10 @@ router.post('/register', authController.register);
  *     responses:
  *       200:
  *         description: Login exitoso, se retorna la información del usuario y token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
  *       400:
  *         description: Datos faltantes en el cuerpo de la petición.
  *       401:

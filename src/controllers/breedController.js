@@ -16,6 +16,15 @@ const pool = require('../config/db');
  *         name:
  *           type: string
  *           description: Nombre de la raza
+ *     BreedListResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         data:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Breed'
  */
 
 const getBreedsBySpecies = async (req, res, next) => {

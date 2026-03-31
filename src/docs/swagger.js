@@ -11,14 +11,30 @@ const swaggerOptions = {
             contact: {
                 name: 'Soporte Volvid',
                 url: 'https://volvid.com'
-            },
-            servers: [
-                {
-                    url: 'http://localhost:3000',
-                    description: 'Servidor de Desarrollo'
-                }
-            ],
+            }
         },
+        servers: [
+            {
+                url: 'http://localhost:3000',
+                description: 'Servidor de Desarrollo'
+            },
+            {
+                url: 'https://api.volvidmascotas.com',
+                description: 'Servidor de Producción'
+            }
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                }
+            }
+        },
+        security: [{
+            bearerAuth: []
+        }]
     },
     apis: [path.join(__dirname, '../routes/*.js')], // Ruta absoluta a los archivos de ruteo
 };

@@ -59,6 +59,24 @@ const upload = require('../middlewares/uploadMiddleware');
  *         owner_name:
  *           type: string
  *           description: (Deprecado) Nombre del dueño
+ *     PetResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         message:
+ *           type: string
+ *         data:
+ *           $ref: '#/components/schemas/Pet'
+ *     PetListResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         data:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Pet'
  */
 
 
@@ -89,7 +107,11 @@ const upload = require('../middlewares/uploadMiddleware');
  *             $ref: '#/components/schemas/Pet'
  *     responses:
  *       201:
- *         description: Mascota creada
+ *         description: Mascota creada exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PetResponse'
  */
 router.route('/')
     .get(petController.getAllPets)
@@ -114,9 +136,7 @@ router.route('/')
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Pet'
+ *               $ref: '#/components/schemas/PetListResponse'
  */
 router.route('/user/:user_id')
     .get(petController.getPetsByUserId);
@@ -156,7 +176,11 @@ router.route('/user/:user_id')
  *             $ref: '#/components/schemas/Pet'
  *     responses:
  *       200:
- *         description: Mascota actualizada
+ *         description: Mascota actualizada exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PetResponse'
  *   delete:
  *     summary: Eliminar una mascota
  *     tags: [Pets]

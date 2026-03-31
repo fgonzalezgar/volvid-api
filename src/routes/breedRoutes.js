@@ -22,9 +22,7 @@ const breedController = require('../controllers/breedController');
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Breed'
+ *               $ref: '#/components/schemas/BreedListResponse'
  */
 router.route('/:species')
     .get(breedController.getBreedsBySpecies);
