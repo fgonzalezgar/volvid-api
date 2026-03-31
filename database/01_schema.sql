@@ -1,7 +1,7 @@
 -- 01_schema.sql
 -- Create database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS volvid_db;
-USE volvid_db;
+CREATE DATABASE IF NOT EXISTS u233760802_volvid;
+USE u233760802_volvid;
 
 -- Table for pets
 CREATE TABLE IF NOT EXISTS pets (
