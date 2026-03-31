@@ -15,6 +15,9 @@ const petController = require('../controllers/petController');
  *         id:
  *           type: integer
  *           description: ID autogenerado
+ *         user_id:
+ *           type: integer
+ *           description: ID del usuario creador
  *         name:
  *           type: string
  *           description: Nombre de la mascota
@@ -50,7 +53,7 @@ const petController = require('../controllers/petController');
  *           description: Edad en años
  *         owner_name:
  *           type: string
- *           description: Nombre del dueño
+ *           description: (Deprecado) Nombre del dueño
  */
 
 
@@ -88,20 +91,20 @@ router.route('/')
 
 /**
  * @swagger
- * /api/pets/user/{owner_name}:
+ * /api/pets/user/{user_id}:
  *   get:
- *     summary: Obtener mascotas filtradas por usuario (dueño)
+ *     summary: Obtener mascotas filtradas por ID de usuario
  *     tags: [Pets]
  *     parameters:
  *       - in: path
- *         name: owner_name
+ *         name: user_id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
- *         description: Nombre del dueño de la mascota
+ *         description: ID numérico del usuario de Volvid
  *     responses:
  *       200:
- *         description: Lista de mascotas que pertenecen a este usuario
+ *         description: Lista de mascotas registradas por este usuario
  *         content:
  *           application/json:
  *             schema:
@@ -109,8 +112,8 @@ router.route('/')
  *               items:
  *                 $ref: '#/components/schemas/Pet'
  */
-router.route('/user/:owner_name')
-    .get(petController.getPetsByOwner);
+router.route('/user/:user_id')
+    .get(petController.getPetsByUserId);
 
 /**
  * @swagger

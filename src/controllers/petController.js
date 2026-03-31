@@ -36,7 +36,7 @@ const getPetById = async (req, res, next) => {
 
 const createPet = async (req, res, next) => {
     try {
-        const { name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs } = req.body;
+        const { user_id, name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs } = req.body;
         
         if (!name || !species) {
             const error = new Error('Nombre y especie son campos obligatorios');
@@ -45,8 +45,8 @@ const createPet = async (req, res, next) => {
         }
 
         const [result] = await pool.query(
-            'INSERT INTO pets (name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [name, species, breed, age, owner_name, weight || null, gender || null, last_vaccine || null, last_bath || null, temperament || null, special_needs || null]
+            'INSERT INTO pets (user_id, name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [user_id || null, name, species, breed, age, owner_name, weight || null, gender || null, last_vaccine || null, last_bath || null, temperament || null, special_needs || null]
         );
 
         res.status(201).json({
@@ -61,7 +61,7 @@ const createPet = async (req, res, next) => {
 
 const updatePet = async (req, res, next) => {
     try {
-        const { name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs } = req.body;
+        const { user_id, name, species, breed, age, owner_name, weight, gender, last_vaccine, last_bath, temperament, special_needs } = req.body;
         const [rows] = await pool.query('SELECT * FROM pets WHERE id = ?', [req.params.id]);
         
         if (rows.length === 0) {
@@ -71,8 +71,9 @@ const updatePet = async (req, res, next) => {
         }
 
         await pool.query(
-            'UPDATE pets SET name = ?, species = ?, breed = ?, age = ?, owner_name = ?, weight = ?, gender = ?, last_vaccine = ?, last_bath = ?, temperament = ?, special_needs = ? WHERE id = ?',
+            'UPDATE pets SET user_id = ?, name = ?, species = ?, breed = ?, age = ?, owner_name = ?, weight = ?, gender = ?, last_vaccine = ?, last_bath = ?, temperament = ?, special_needs = ? WHERE id = ?',
             [
+                user_id !== undefined ? user_id : rows[0].user_id,
                 name || rows[0].name, 
                 species || rows[0].species, 
                 breed || rows[0].breed, 
@@ -116,10 +117,10 @@ const deletePet = async (req, res, next) => {
     }
 };
 
-const getPetsByOwner = async (req, res, next) => {
+const getPetsByUserId = async (req, res, next) => {
     try {
-        const { owner_name } = req.params;
-        const [rows] = await pool.query('SELECT * FROM pets WHERE owner_name = ? ORDER BY created_at DESC', [owner_name]);
+        const { user_id } = req.params;
+        const [rows] = await pool.query('SELECT * FROM pets WHERE user_id = ? ORDER BY created_at DESC', [user_id]);
         
         res.status(200).json({
             success: true,
@@ -136,5 +137,5 @@ module.exports = {
     createPet,
     updatePet,
     deletePet,
-    getPetsByOwner
+    getPetsByUserId
 };
