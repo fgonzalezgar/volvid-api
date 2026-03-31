@@ -22,6 +22,13 @@ const authController = require('../controllers/authController');
  *         phone:
  *           type: string
  *           description: Número de teléfono +34 000...
+ *         role:
+ *           type: string
+ *           description: Rol del usuario (ej. owner, provider)
+ *           default: owner
+ *         accepted_terms:
+ *           type: boolean
+ *           description: Aceptación de términos y condiciones y políticas de privacidad
  *         password:
  *           type: string
  *           format: password
