@@ -2,10 +2,10 @@ const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: process.env.DB_HOST || '82.197.82.133',
+    user: process.env.DB_USER || 'u233760802_volvid',
+    password: process.env.DB_PASSWORD || 'T1014996985g@g',
+    database: process.env.DB_NAME || 'u233760802_volvid',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
