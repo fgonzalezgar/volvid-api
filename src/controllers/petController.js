@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { generatePetQR } = require('../utils/qrGenerator');
 
 /**
  * @controller PetController
@@ -52,10 +53,18 @@ const createPet = async (req, res, next) => {
             [user_id || null, name, species, breed, age, owner_name, weight || null, gender || null, last_vaccine || null, last_bath || null, temperament || null, special_needs || null, photo]
         );
 
+        const petId = result.insertId;
+
+        // Generar Código QR Único
+        const qrCodePath = await generatePetQR(petId);
+
+        // Actualizar registro con el QR
+        await pool.query('UPDATE pets SET qr_code = ? WHERE id = ?', [qrCodePath, petId]);
+
         res.status(201).json({
             success: true,
-            message: 'Mascota creada correctamente',
-            data: { id: result.insertId, ...req.body, photo }
+            message: 'Mascota creada correctamente con identificación QR',
+            data: { id: petId, ...req.body, photo, qr_code: qrCodePath }
         });
     } catch (error) {
         next(error);

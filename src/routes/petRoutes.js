@@ -53,6 +53,9 @@ const upload = require('../middlewares/uploadMiddleware');
  *           type: string
  *           format: binary
  *           description: (Multipart) Archivo de imagen de la mascota
+ *         qr_code:
+ *           type: string
+ *           description: URL de la imagen del código QR autogenerado
  *         age:
  *           type: integer
  *           description: Edad en años
