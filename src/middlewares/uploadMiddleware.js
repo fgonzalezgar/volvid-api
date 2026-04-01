@@ -2,25 +2,27 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Configurar el almacenamiento
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = path.join(__dirname, '../../public/uploads/pets');
-        
-        // Crear la carpeta si no existe
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
+// Función para configurar el almacenamiento dinámicamente
+const createStorage = (folder, prefix) => {
+    return multer.diskStorage({
+        destination: (req, file, cb) => {
+            const uploadPath = path.join(__dirname, `../../public/uploads/${folder}`);
+            
+            // Crear la carpeta si no existe
+            if (!fs.existsSync(uploadPath)) {
+                fs.mkdirSync(uploadPath, { recursive: true });
+            }
+            
+            cb(null, uploadPath);
+        },
+        filename: (req, file, cb) => {
+            // Generar un nombre único
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const ext = path.extname(file.originalname);
+            cb(null, `${prefix}-${uniqueSuffix}${ext}`);
         }
-        
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        // Generar un nombre único: pet-TIMESTAMP.ext
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, `pet-${uniqueSuffix}${ext}`);
-    }
-});
+    });
+};
 
 // Filtro de archivos (Solo imágenes)
 const fileFilter = (req, file, cb) => {
@@ -35,10 +37,20 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5MB
+// Instancia para Mascotas (Mantener compatibilidad)
+const uploadPet = multer({
+    storage: createStorage('pets', 'pet'),
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: fileFilter
 });
 
-module.exports = upload;
+// Instancia para Usuarios (Dueños/Proveedores)
+const uploadUser = multer({
+    storage: createStorage('users', 'user'),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: fileFilter
+});
+
+// Exportar ambos. El default es para Mascotas para no romper rutas existentes.
+module.exports = uploadPet;
+module.exports.user = uploadUser;

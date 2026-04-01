@@ -126,7 +126,85 @@ const login = async (req, res, next) => {
     }
 };
 
+/**
+ * Obtener perfil del usuario autenticado
+ */
+const getProfile = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        
+        // Consultar info completa del usuario
+        const [users] = await pool.query(
+            'SELECT id, name, email, phone, secondary_phone, address, province, city, photo, role, created_at FROM users WHERE id = ?', 
+            [userId]
+        );
+        
+        if (users.length === 0) {
+            const error = new Error('Usuario no encontrado');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: users[0]
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Actualizar perfil del usuario
+ */
+const updateProfile = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const { name, phone, secondary_phone, address, province, city } = req.body;
+        
+        // La foto viene de multer si se subió
+        const photo = req.file ? `/uploads/users/${req.file.filename}` : null;
+
+        // Obtener datos actuales para no sobrescribir con null si no se envían
+        const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+        if (rows.length === 0) {
+            const error = new Error('Usuario no encontrado');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const user = rows[0];
+
+        // Actualizar en DB
+        await pool.query(
+            'UPDATE users SET name = ?, phone = ?, secondary_phone = ?, address = ?, province = ?, city = ?, photo = ? WHERE id = ?',
+            [
+                name || user.name,
+                phone || user.phone,
+                secondary_phone !== undefined ? secondary_phone : user.secondary_phone,
+                address !== undefined ? address : user.address,
+                province !== undefined ? province : user.province,
+                city !== undefined ? city : user.city,
+                photo || user.photo,
+                userId
+            ]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Perfil actualizado correctamente',
+            data: {
+                photo: photo || user.photo
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     register,
-    login
+    login,
+    getProfile,
+    updateProfile
 };

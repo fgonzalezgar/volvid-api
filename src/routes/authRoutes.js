@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const { verifyToken } = require('../middlewares/authMiddleware');
+const { user: uploadUser } = require('../middlewares/uploadMiddleware');
 
 /**
  * @swagger
@@ -79,6 +81,19 @@ const authController = require('../controllers/authController');
  *                   type: string
  *             token:
  *               type: string
+ *     ProfileUpdateResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         message:
+ *           type: string
+ *         data:
+ *           type: object
+ *           properties:
+ *             photo:
+ *               type: string
+ *               description: URL de la foto de perfil actualizada
  */
 
 /**
@@ -134,5 +149,59 @@ router.post('/register', authController.register);
  *         description: Credenciales inválidas (contraseña incorrecta o correo no existe).
  */
 router.post('/login', authController.login);
+
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   get:
+ *     summary: Obtener perfil del usuario
+ *     description: Retorna la información completa del perfil del usuario autenticado. Requiere Token JWT.
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Datos de perfil obtenidos exitosamente.
+ *       401:
+ *         description: No autorizado. Token inválido o no proporcionado.
+ *   put:
+ *     summary: Actualizar perfil y foto
+ *     description: Permite modificar los datos personales y subir una foto de perfil. Requiere Token JWT. Soporta Multipart/Form-Data.
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               secondary_phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               province:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               photo:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Perfil actualizado exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ProfileUpdateResponse'
+ */
+router.get('/profile', verifyToken, authController.getProfile);
+router.put('/profile', verifyToken, uploadUser.single('photo'), authController.updateProfile);
+router.post('/profile', verifyToken, uploadUser.single('photo'), authController.updateProfile);
+router.patch('/profile', verifyToken, uploadUser.single('photo'), authController.updateProfile);
 
 module.exports = router;
