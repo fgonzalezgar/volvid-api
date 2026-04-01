@@ -202,9 +202,101 @@ const updateProfile = async (req, res, next) => {
     }
 };
 
+/**
+ * Registro de nuevos Prestadores de Servicios
+ */
+const registerProvider = async (req, res, next) => {
+    try {
+        const { name, email, phone, password, business_name, services, experience, accepted_terms } = req.body;
+
+        // Validaciones básicas
+        if (!name || !email || !password || !business_name) {
+            const error = new Error('Nombre, correo, contraseña y nombre del negocio son obligatorios');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (accepted_terms !== 'true' && accepted_terms !== true && accepted_terms !== 1) {
+            const error = new Error('Debes aceptar los términos y condiciones');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // Verificar si el correo ya existe
+        const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            const error = new Error('El correo electrónico ya está registrado');
+            error.statusCode = 409;
+            throw error;
+        }
+
+        // Hash de contraseña
+        const salt = await bcrypt.genSalt(10);
+        const encodedPassword = await bcrypt.hash(password, salt);
+
+        // Iniciar transacción para asegurar integridad (User + Profile)
+        const connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        try {
+            // 1. Crear Usuario con rol 'provider'
+            const [userResult] = await connection.query(
+                'INSERT INTO users (name, email, phone, role, accepted_terms, password_hash) VALUES (?, ?, ?, ?, ?, ?)',
+                [name, email, phone || null, 'provider', 1, encodedPassword]
+            );
+
+            const userId = userResult.insertId;
+
+            // 2. Obtener rutas de archivos subidos por Multer
+            const identityDoc = req.files && req.files['identity_document'] 
+                ? `/uploads/providers/${req.files['identity_document'][0].filename}` 
+                : null;
+            
+            const certsDoc = req.files && req.files['certifications'] 
+                ? `/uploads/providers/${req.files['certifications'][0].filename}` 
+                : null;
+
+            // 3. Crear Perfil de Prestador
+            await connection.query(
+                'INSERT INTO provider_profiles (user_id, business_name, services, experience, identity_document, certifications) VALUES (?, ?, ?, ?, ?, ?)',
+                [
+                    userId, 
+                    business_name, 
+                    services || null, 
+                    experience || null, 
+                    identityDoc, 
+                    certsDoc
+                ]
+            );
+
+            await connection.commit();
+
+            // Generar Token JWT
+            const token = jwt.sign({ id: userId, email, role: 'provider' }, JWT_SECRET, { expiresIn: '30d' });
+
+            res.status(201).json({
+                success: true,
+                message: 'Registro de prestador enviado correctamente y en proceso de verificación',
+                data: {
+                    user: { id: userId, name, email, role: 'provider' },
+                    token
+                }
+            });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     register,
     login,
     getProfile,
-    updateProfile
+    updateProfile,
+    registerProvider
 };

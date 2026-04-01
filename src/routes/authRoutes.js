@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { verifyToken } = require('../middlewares/authMiddleware');
-const { user: uploadUser } = require('../middlewares/uploadMiddleware');
+const { user: uploadUser, provider: uploadProvider } = require('../middlewares/uploadMiddleware');
 
 /**
  * @swagger
@@ -203,5 +203,74 @@ router.get('/profile', verifyToken, authController.getProfile);
 router.put('/profile', verifyToken, uploadUser.single('photo'), authController.updateProfile);
 router.post('/profile', verifyToken, uploadUser.single('photo'), authController.updateProfile);
 router.patch('/profile', verifyToken, uploadUser.single('photo'), authController.updateProfile);
+
+/**
+ * @swagger
+ * /api/auth/register/provider:
+ *   post:
+ *     summary: Registro de prestador de servicios profesional
+ *     description: Registra un nuevo experto en mascotas subiendo documentos de verificación (PDF/JPG).
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *               - business_name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Nombre completo
+ *               email:
+ *                 type: string
+ *                 description: Correo electrónico
+ *               phone:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 format: password
+ *               business_name:
+ *                 type: string
+ *                 description: Nombre del Negocio o Servicio
+ *               services:
+ *                 type: string
+ *                 description: Servicios ofrecidos (Paseador, Taxi Mascota, Peluquería, Veterinaria)
+ *               experience:
+ *                 type: string
+ *                 description: Perfil profesional y trayectoria
+ *               accepted_terms:
+ *                 type: boolean
+ *               identity_document:
+ *                 type: string
+ *                 format: binary
+ *                 description: Documento de Identidad (PDF o JPG)
+ *               certifications:
+ *                 type: string
+ *                 format: binary
+ *                 description: Certificaciones o Diplomas (PDF o JPG)
+ *     responses:
+ *       201:
+ *         description: Solicitud de registro enviada exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         description: Datos faltantes o términos no aceptados.
+ *       409:
+ *         description: El correo ya existe.
+ */
+router.post('/register/provider', 
+    uploadProvider.fields([
+        { name: 'identity_document', maxCount: 1 }, 
+        { name: 'certifications', maxCount: 1 }
+    ]), 
+    authController.registerProvider
+);
 
 module.exports = router;

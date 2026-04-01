@@ -37,6 +37,19 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
+// Filtro que incluye PDFs para Prestadores
+const fileFilterProvider = (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp|pdf/;
+    const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (ext && mimetype) {
+        return cb(null, true);
+    } else {
+        cb(new Error('Solo se permiten imágenes (jpg, jpeg, png, webp) o documentos PDF'), false);
+    }
+};
+
 // Instancia para Mascotas (Mantener compatibilidad)
 const uploadPet = multer({
     storage: createStorage('pets', 'pet'),
@@ -44,13 +57,21 @@ const uploadPet = multer({
     fileFilter: fileFilter
 });
 
-// Instancia para Usuarios (Dueños/Proveedores)
+// Instancia para Usuarios (Dueños)
 const uploadUser = multer({
     storage: createStorage('users', 'user'),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: fileFilter
 });
 
-// Exportar ambos. El default es para Mascotas para no romper rutas existentes.
+// Instancia para Prestadores (Soporta PDF)
+const uploadProvider = multer({
+    storage: createStorage('providers', 'doc'),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: fileFilterProvider
+});
+
+// Exportar todos
 module.exports = uploadPet;
 module.exports.user = uploadUser;
+module.exports.provider = uploadProvider;
