@@ -100,8 +100,8 @@ const { user: uploadUser, provider: uploadProvider } = require('../middlewares/u
  * @swagger
  * /api/auth/register:
  *   post:
- *     summary: Crear cuenta de usuario
- *     description: Registra un nuevo usuario en Volvid y devuelve un Token JWT para la app.
+ *     summary: Registro unificado (Dueños y Prestadores)
+ *     description: Crea una cuenta de usuario. Si el 'role' es 'provider', se requiere 'business_name' y se pueden subir documentos.
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -109,19 +109,48 @@ const { user: uploadUser, provider: uploadProvider } = require('../middlewares/u
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/RegistrationRequest'
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [owner, provider]
+ *               business_name:
+ *                 type: string
+ *               services:
+ *                 type: string
+ *               experience:
+ *                 type: string
+ *               accepted_terms:
+ *                 type: boolean
+ *               identity_document:
+ *                 type: string
+ *                 format: binary
+ *               certifications:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       201:
- *         description: Cuenta creada exitosamente. Token generado.
+ *         description: Cuenta creada con éxito.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/AuthResponse'
- *       400:
- *         description: Faltan datos requeridos o las contraseñas no coinciden.
- *       409:
- *         description: El correo ya está registrado en el sistema.
  */
-router.post('/register', authController.register);
+router.post('/register', 
+    uploadProvider.fields([
+        { name: 'identity_document', maxCount: 1 }, 
+        { name: 'certifications', maxCount: 1 }
+    ]), 
+    authController.register
+);
 
 /**
  * @swagger
@@ -208,69 +237,20 @@ router.patch('/profile', verifyToken, uploadUser.single('photo'), authController
  * @swagger
  * /api/auth/register/provider:
  *   post:
- *     summary: Registro de prestador de servicios profesional
- *     description: Registra un nuevo experto en mascotas subiendo documentos de verificación (PDF/JPG).
+ *     summary: Alias para registro de prestador (Red Élite)
  *     tags: [Auth]
  *     requestBody:
- *       required: true
  *       content:
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required:
- *               - name
- *               - email
- *               - password
- *               - business_name
- *             properties:
- *               name:
- *                 type: string
- *                 description: Nombre completo
- *               email:
- *                 type: string
- *                 description: Correo electrónico
- *               phone:
- *                 type: string
- *               password:
- *                 type: string
- *                 format: password
- *               business_name:
- *                 type: string
- *                 description: Nombre del Negocio o Servicio
- *               services:
- *                 type: string
- *                 description: Servicios ofrecidos (Paseador, Taxi Mascota, Peluquería, Veterinaria)
- *               experience:
- *                 type: string
- *                 description: Perfil profesional y trayectoria
- *               accepted_terms:
- *                 type: boolean
- *               identity_document:
- *                 type: string
- *                 format: binary
- *                 description: Documento de Identidad (PDF o JPG)
- *               certifications:
- *                 type: string
- *                 format: binary
- *                 description: Certificaciones o Diplomas (PDF o JPG)
- *     responses:
- *       201:
- *         description: Solicitud de registro enviada exitosamente.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AuthResponse'
- *       400:
- *         description: Datos faltantes o términos no aceptados.
- *       409:
- *         description: El correo ya existe.
  */
 router.post('/register/provider', 
     uploadProvider.fields([
         { name: 'identity_document', maxCount: 1 }, 
         { name: 'certifications', maxCount: 1 }
     ]), 
-    authController.registerProvider
+    authController.register
 );
 
 module.exports = router;

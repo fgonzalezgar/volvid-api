@@ -12,29 +12,38 @@ const JWT_SECRET = process.env.JWT_SECRET || 'volvid_super_secret_key_2026';
 
 const register = async (req, res, next) => {
     try {
-        const { name, email, phone, password, confirmPassword, role, accepted_terms } = req.body;
+        // Capturar todos los campos posibles (Dueño y Prestador)
+        const { 
+            name, email, phone, password, confirmPassword, 
+            role, accepted_terms,
+            business_name, services, experience 
+        } = req.body;
 
-        // Form fields validation based on UI
+        // Validaciones comunes
         if (!name || !email || !password) {
             const error = new Error('Nombre completo, correo y contraseña son obligatorios');
             error.statusCode = 400;
             throw error;
         }
 
-        if (accepted_terms !== true) {
-            const error = new Error('Debes aceptar los términos y condiciones para registrarte');
+        const isAccepted = accepted_terms === true || accepted_terms === 'true' || accepted_terms === 1 || accepted_terms === '1';
+        if (!isAccepted) {
+            const error = new Error('Debes aceptar los términos y condiciones para continuar');
             error.statusCode = 400;
             throw error;
         }
 
-        // Optional Backend check for confirmPassword just in case
-        if (confirmPassword && password !== confirmPassword) {
-            const error = new Error('Las contraseñas no coinciden');
+        // Determinar rol final (dueño por defecto si no es explícitamente provider)
+        const assignedRole = role === 'provider' ? 'provider' : 'owner';
+
+        // Si es prestador, validar campos críticos del negocio
+        if (assignedRole === 'provider' && !business_name) {
+            const error = new Error('El nombre del negocio es obligatorio para prestadores');
             error.statusCode = 400;
             throw error;
         }
 
-        // Check if user already exists
+        // Verificar si el correo ya existe
         const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
         if (existing.length > 0) {
             const error = new Error('El correo electrónico ya está registrado');
@@ -42,29 +51,66 @@ const register = async (req, res, next) => {
             throw error;
         }
 
-        // Hash the password securely
+        // Hash de contraseña seguro
         const salt = await bcrypt.genSalt(10);
         const encodedPassword = await bcrypt.hash(password, salt);
 
-        const assignedRole = role || 'owner'; // Dueño de mascota por defecto
+        // TRANSACCIÓN: Aseguramos que se creen ambas tablas o ninguna
+        const connection = await pool.getConnection();
+        await connection.beginTransaction();
 
-        // Store user in DB
-        const [result] = await pool.query(
-            'INSERT INTO users (name, email, phone, role, accepted_terms, password_hash) VALUES (?, ?, ?, ?, ?, ?)',
-            [name, email, phone || null, assignedRole, accepted_terms ? 1 : 0, encodedPassword]
-        );
+        try {
+            // 1. Insertar en tabla de usuarios
+            const [userResult] = await connection.query(
+                'INSERT INTO users (name, email, phone, role, accepted_terms, password_hash) VALUES (?, ?, ?, ?, ?, ?)',
+                [name, email, phone || null, assignedRole, 1, encodedPassword]
+            );
 
-        // Generate Token
-        const token = jwt.sign({ id: result.insertId, email, role: assignedRole }, JWT_SECRET, { expiresIn: '30d' });
+            const userId = userResult.insertId;
 
-        res.status(201).json({
-            success: true,
-            message: 'Cuenta creada exitosamente',
-            data: {
-                user: { id: result.insertId, name, email, phone, role: assignedRole, accepted_terms },
-                token
+            // 2. Si el rol es prestador, insertar perfil profesional obligatoriamente
+            if (assignedRole === 'provider') {
+                const identityDoc = req.files && req.files['identity_document'] 
+                    ? `/uploads/providers/${req.files['identity_document'][0].filename}` 
+                    : null;
+                
+                const certsDoc = req.files && req.files['certifications'] 
+                    ? `/uploads/providers/${req.files['certifications'][0].filename}` 
+                    : null;
+
+                await connection.query(
+                    'INSERT INTO provider_profiles (user_id, business_name, services, experience, identity_document, certifications) VALUES (?, ?, ?, ?, ?, ?)',
+                    [
+                        userId, 
+                        business_name, 
+                        services || null, 
+                        experience || null, 
+                        identityDoc, 
+                        certsDoc
+                    ]
+                );
             }
-        });
+
+            await connection.commit();
+
+            // Generar Token JWT
+            const token = jwt.sign({ id: userId, email, role: assignedRole }, JWT_SECRET, { expiresIn: '30d' });
+
+            res.status(201).json({
+                success: true,
+                message: assignedRole === 'provider' ? 'Registro de prestador completado' : 'Cuenta creada exitosamente',
+                data: {
+                    user: { id: userId, name, email, role: assignedRole },
+                    token
+                }
+            });
+
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     } catch (error) {
         next(error);
     }
@@ -202,101 +248,9 @@ const updateProfile = async (req, res, next) => {
     }
 };
 
-/**
- * Registro de nuevos Prestadores de Servicios
- */
-const registerProvider = async (req, res, next) => {
-    try {
-        const { name, email, phone, password, business_name, services, experience, accepted_terms } = req.body;
-
-        // Validaciones básicas
-        if (!name || !email || !password || !business_name) {
-            const error = new Error('Nombre, correo, contraseña y nombre del negocio son obligatorios');
-            error.statusCode = 400;
-            throw error;
-        }
-
-        if (accepted_terms !== 'true' && accepted_terms !== true && accepted_terms !== 1) {
-            const error = new Error('Debes aceptar los términos y condiciones');
-            error.statusCode = 400;
-            throw error;
-        }
-
-        // Verificar si el correo ya existe
-        const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
-        if (existing.length > 0) {
-            const error = new Error('El correo electrónico ya está registrado');
-            error.statusCode = 409;
-            throw error;
-        }
-
-        // Hash de contraseña
-        const salt = await bcrypt.genSalt(10);
-        const encodedPassword = await bcrypt.hash(password, salt);
-
-        // Iniciar transacción para asegurar integridad (User + Profile)
-        const connection = await pool.getConnection();
-        await connection.beginTransaction();
-
-        try {
-            // 1. Crear Usuario con rol 'provider'
-            const [userResult] = await connection.query(
-                'INSERT INTO users (name, email, phone, role, accepted_terms, password_hash) VALUES (?, ?, ?, ?, ?, ?)',
-                [name, email, phone || null, 'provider', 1, encodedPassword]
-            );
-
-            const userId = userResult.insertId;
-
-            // 2. Obtener rutas de archivos subidos por Multer
-            const identityDoc = req.files && req.files['identity_document'] 
-                ? `/uploads/providers/${req.files['identity_document'][0].filename}` 
-                : null;
-            
-            const certsDoc = req.files && req.files['certifications'] 
-                ? `/uploads/providers/${req.files['certifications'][0].filename}` 
-                : null;
-
-            // 3. Crear Perfil de Prestador
-            await connection.query(
-                'INSERT INTO provider_profiles (user_id, business_name, services, experience, identity_document, certifications) VALUES (?, ?, ?, ?, ?, ?)',
-                [
-                    userId, 
-                    business_name, 
-                    services || null, 
-                    experience || null, 
-                    identityDoc, 
-                    certsDoc
-                ]
-            );
-
-            await connection.commit();
-
-            // Generar Token JWT
-            const token = jwt.sign({ id: userId, email, role: 'provider' }, JWT_SECRET, { expiresIn: '30d' });
-
-            res.status(201).json({
-                success: true,
-                message: 'Registro de prestador enviado correctamente y en proceso de verificación',
-                data: {
-                    user: { id: userId, name, email, role: 'provider' },
-                    token
-                }
-            });
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
-    } catch (error) {
-        next(error);
-    }
-};
-
 module.exports = {
     register,
     login,
     getProfile,
-    updateProfile,
-    registerProvider
+    updateProfile
 };
