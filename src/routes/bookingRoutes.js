@@ -176,4 +176,26 @@ router.post('/:id/location', verifyToken, bookingController.trackLocation);
  */
 router.get('/:id/route', verifyToken, bookingController.getBookingRoute);
 
+/**
+ * @swagger
+ * /api/bookings/schedule:
+ *   get:
+ *     summary: Consultar agenda del prestador (Solicitados y Aprobados)
+ *     description: Retorna dos listas separadas: 'requested' (pendientes) y 'active' (aceptados o en progreso). Solo para usuarios con rol 'provider'.
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Agenda obtenida con éxito.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 requested: [...]
+ *                 active: [...]
+ */
+router.get('/schedule', verifyToken, bookingController.getProviderSchedule);
+
 module.exports = router;

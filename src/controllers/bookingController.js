@@ -216,10 +216,56 @@ const getBookingRoute = async (req, res, next) => {
     }
 };
 
+// Consultar agenda del prestador (Solicitados y Aprobados)
+const getProviderSchedule = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+
+        // Validar que sea un prestador
+        if (req.user.role !== 'provider') {
+            const error = new Error('Solo los prestadores pueden consultar su agenda de servicios');
+            error.statusCode = 403;
+            throw error;
+        }
+
+        const query = `
+            SELECT 
+                b.*, 
+                uo.name AS owner_name, 
+                uo.phone AS owner_phone,
+                p.name AS pet_name, 
+                p.photo AS pet_photo,
+                ps.service_type
+            FROM bookings b
+            JOIN users uo ON b.owner_id = uo.id
+            JOIN pets p ON b.pet_id = p.id
+            JOIN provider_services ps ON b.service_id = ps.id
+            WHERE b.provider_id = ? AND b.status IN ('pending', 'accepted', 'in_progress')
+            ORDER BY b.service_date ASC, b.service_time ASC
+        `;
+
+        const [rows] = await pool.query(query, [userId]);
+
+        // Separar entre Solicitados (pending) y Aprobados/Activos (accepted, in_progress)
+        const scheduled = {
+            requested: rows.filter(r => r.status === 'pending'),
+            active: rows.filter(r => ['accepted', 'in_progress'].includes(r.status))
+        };
+
+        res.status(200).json({
+            success: true,
+            data: scheduled
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createBooking,
     updateBookingStatus,
     listBookings,
     trackLocation,
-    getBookingRoute
+    getBookingRoute,
+    getProviderSchedule
 };
