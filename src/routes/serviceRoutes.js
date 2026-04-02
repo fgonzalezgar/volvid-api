@@ -323,4 +323,179 @@ router.get('/', verifyToken, serviceController.getMyServices);
  */
 router.delete('/:id', verifyToken, serviceController.deleteService);
 
+/**
+ * @swagger
+ * /api/services/search:
+ *   get:
+ *     summary: Buscar servicios con filtros (público)
+ *     description: |
+ *       Endpoint **público** (no requiere token) que permite a los dueños de mascotas buscar prestadores
+ *       disponibles usando filtros opcionales. Los resultados se ordenan por tarifa base ascendente.
+ *
+ *       **Todos los filtros son opcionales.** Si no se envía ninguno, retorna todos los servicios activos.
+ *     tags: [Services]
+ *     parameters:
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *         description: Filtrar por ciudad (búsqueda parcial, no distingue mayúsculas)
+ *         example: "Medellín"
+ *       - in: query
+ *         name: department
+ *         schema:
+ *           type: string
+ *         description: Filtrar por departamento
+ *         example: "Antioquia"
+ *       - in: query
+ *         name: service_type
+ *         schema:
+ *           type: string
+ *           enum: [Paseo, Peluquería, Transporte, Veterinaria, Cuidado en Casa]
+ *         description: Filtrar por tipo de servicio
+ *         example: "Paseo"
+ *     responses:
+ *       200:
+ *         description: Listado de servicios que coinciden con los filtros.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 total:
+ *                   type: integer
+ *                   description: Número total de resultados encontrados
+ *                   example: 2
+ *                 filters:
+ *                   type: object
+ *                   description: Filtros aplicados en la búsqueda
+ *                   properties:
+ *                     city:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "Medellín"
+ *                     department:
+ *                       type: string
+ *                       nullable: true
+ *                       example: null
+ *                     service_type:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "Paseo"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/ServiceResponse'
+ *                       - type: object
+ *                         properties:
+ *                           provider_name:
+ *                             type: string
+ *                             description: Nombre del prestador
+ *                             example: "Mario Pérez"
+ *             example:
+ *               success: true
+ *               total: 1
+ *               filters:
+ *                 city: "Medellín"
+ *                 department: null
+ *                 service_type: "Paseo"
+ *               data:
+ *                 - id: 1
+ *                   provider_id: 5
+ *                   provider_name: "Mario Pérez"
+ *                   service_type: "Paseo"
+ *                   base_rate: "25000.00"
+ *                   days_available: ["L", "M", "MI", "J", "V"]
+ *                   start_time: "08:00:00"
+ *                   end_time: "18:00:00"
+ *                   department: "Antioquia"
+ *                   city: "Medellín"
+ *                   specific_zones: "El Poblado, Laureles"
+ *                   status: "active"
+ */
+router.get('/search', serviceController.searchServices);
+
+/**
+ * @swagger
+ * /api/services/provider/{id}:
+ *   get:
+ *     summary: Ver todos los servicios de un prestador específico (público)
+ *     description: |
+ *       Endpoint **público** (no requiere token) que retorna todos los servicios activos
+ *       de un prestador identificado por su `id`. Incluye la información básica del prestador.
+ *
+ *       Útil para mostrar el perfil público de un prestador con todos sus servicios disponibles.
+ *     tags: [Services]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario prestador de servicios
+ *         example: 5
+ *     responses:
+ *       200:
+ *         description: Información del prestador y sus servicios activos.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 provider:
+ *                   type: object
+ *                   description: Información básica del prestador
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 5
+ *                     name:
+ *                       type: string
+ *                       example: "Mario Pérez"
+ *                     email:
+ *                       type: string
+ *                       example: "mario@gmail.com"
+ *                 data:
+ *                   type: array
+ *                   description: Servicios activos del prestador
+ *                   items:
+ *                     $ref: '#/components/schemas/ServiceResponse'
+ *             example:
+ *               success: true
+ *               provider:
+ *                 id: 5
+ *                 name: "Mario Pérez"
+ *                 email: "mario@gmail.com"
+ *               data:
+ *                 - id: 1
+ *                   provider_id: 5
+ *                   provider_name: "Mario Pérez"
+ *                   service_type: "Paseo"
+ *                   base_rate: "25000.00"
+ *                   days_available: ["L", "M", "MI", "J", "V"]
+ *                   start_time: "08:00:00"
+ *                   end_time: "18:00:00"
+ *                   department: "Antioquia"
+ *                   city: "Medellín"
+ *                   specific_zones: "El Poblado, Laureles"
+ *                   status: "active"
+ *       404:
+ *         description: El prestador no existe o no tiene rol de proveedor.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "El prestador no existe o no está registrado"
+ */
+router.get('/provider/:id', serviceController.getServicesByProvider);
+
 module.exports = router;

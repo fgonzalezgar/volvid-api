@@ -113,8 +113,100 @@ const deleteService = async (req, res, next) => {
     }
 };
 
+// Helper: parsear días de JSON string a arreglo
+const parseDays = (rows) => rows.map(row => {
+    let parsedDays = row.days_available;
+    try {
+        if (row.days_available) parsedDays = JSON.parse(row.days_available);
+    } catch (e) { /* mantener como está */ }
+    return { ...row, days_available: parsedDays };
+});
+
+/**
+ * Obtener servicios activos de un prestador específico (público)
+ */
+const getServicesByProvider = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        // Verificar que el proveedor exista y sea de rol provider
+        const [users] = await pool.query(
+            'SELECT id, name, email FROM users WHERE id = ? AND role = "provider"',
+            [id]
+        );
+        if (users.length === 0) {
+            const error = new Error('El prestador no existe o no está registrado');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const [rows] = await pool.query(
+            `SELECT ps.*, u.name AS provider_name 
+             FROM provider_services ps 
+             JOIN users u ON u.id = ps.provider_id 
+             WHERE ps.provider_id = ? AND ps.status = "active" 
+             ORDER BY ps.created_at DESC`,
+            [id]
+        );
+
+        res.status(200).json({
+            success: true,
+            provider: users[0],
+            data: parseDays(rows)
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Búsqueda pública de servicios con filtros opcionales
+ * Query params: city, department, service_type
+ */
+const searchServices = async (req, res, next) => {
+    try {
+        const { city, department, service_type } = req.query;
+
+        let query = `
+            SELECT ps.*, u.name AS provider_name 
+            FROM provider_services ps 
+            JOIN users u ON u.id = ps.provider_id 
+            WHERE ps.status = "active"
+        `;
+        const params = [];
+
+        if (city) {
+            query += ' AND LOWER(ps.city) LIKE LOWER(?)';
+            params.push(`%${city}%`);
+        }
+        if (department) {
+            query += ' AND LOWER(ps.department) LIKE LOWER(?)';
+            params.push(`%${department}%`);
+        }
+        if (service_type) {
+            query += ' AND LOWER(ps.service_type) LIKE LOWER(?)';
+            params.push(`%${service_type}%`);
+        }
+
+        query += ' ORDER BY ps.base_rate ASC';
+
+        const [rows] = await pool.query(query, params);
+
+        res.status(200).json({
+            success: true,
+            total: rows.length,
+            filters: { city: city || null, department: department || null, service_type: service_type || null },
+            data: parseDays(rows)
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createService,
     getMyServices,
-    deleteService
+    deleteService,
+    getServicesByProvider,
+    searchServices
 };
